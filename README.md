@@ -26,9 +26,9 @@ Of course, you can also import the minimizer module and use it as follows:
 ```python
 from minimizer import minimize
 with open(code_file, 'r') as f:
-		code = f.read()
+    code = f.read()
 minimized_code = minimize(code)
 with open(minimized_file, 'w') as f:
-  f.write(minimized_code)
+    f.write(minimized_code)
 ```
 By default, the ```minimize``` function will remove blank lines, comments, docstrings, and whitespace between operators and uses a space (" ") for the whitespace character and a tab ("\t") for the indent character, but accepts keyword arguments to change these options.
