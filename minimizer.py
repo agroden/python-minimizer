@@ -4,12 +4,14 @@
 	:synopsis: Minimizes Python code using Python's lexical scanning tokenize module.
 """
 
+
 from __future__ import print_function
 from token import *
 from tokenize import *
 from StringIO import StringIO
 
 
+# classes / helpers ############################################################
 def enum(*sequential, **named):
 	"""Makes an enum type with a reverse mapping for lookup of the enum string.
 	Included for portability sake.
@@ -42,9 +44,18 @@ class TokenGroup(object):
 		prev = None
 		for tok in self._tokens:
 			if tok[0] != NEWLINE and tok[0] != NL:
+				# tok[2][1]: start column, prev[3][1]: end column
+				# the difference between the two indicates whitespace
 				if prev and tok[2][1] > prev[3][1]:
+					# TODO: sometimes two OP types are next to each other and this leads
+					# to odd looking (yet totally valid) output; consider fixing this
+					# example: "... tok[0] == NAME) or not rmwspace:"
+					# becomes: "tok[0]==NAME)or not rmwspace:"
 					if (prev and prev[0] == NAME and tok[0] == NAME) or not rmwspace:
 						ret = ''.join([ret, wspace_char])
+					# TODO: consider adding this for reals
+					#elif preserve_wspace:
+					#	ret = ''.join([ret, wspace_char * (tok[2][1] - prev[3][1])])
 				ret = ''.join([ret, tok[1].rstrip()])
 			prev = tok
 		return ret
@@ -69,6 +80,7 @@ class TokenGroup(object):
 				return TokenGroup.Type.DEDENT
 			elif t[0] == ENDMARKER:
 				return TokenGroup.Type.EOF
+		# function body #
 		self._tokens.append(tok)
 		if self.type == TokenGroup.Type.UNKNOWN:
 			self.type = get_type(tok)
@@ -76,24 +88,39 @@ class TokenGroup(object):
 			self.type = TokenGroup.Type.CODE_INLINE_COMMENT
 		elif self.type == TokenGroup.Type.BLANK_LINE:
 			self.type = get_type(tok)
-		elif self.type == TokenGroup.Type.DOCSTRING and tok[0] != STRING and tok[0] != NEWLINE:
+		elif self.type == TokenGroup.Type.DOCSTRING and tok[0] not in (STRING, NEWLINE):
 			self.type = get_type(tok)
 			
-	def _readable_token(self, tok):
-		return '({}, {}, {}, {}, {})'.format(
-			tok_name[tok[0]], repr(tok[1]), tok[2], tok[3], repr(tok[4])
-		)
-			
 	def __str__(self):
+		"""Prints TokenGroup information for easier debugging.
+		"""
 		def readable_token(self, tok):
 			return '({}, {}, {}, {}, {})'.format(
 				tok_name[tok[0]], repr(tok[1]), tok[2], tok[3], repr(tok[4])
 			)
+		# function body #
 		return 'TokenGroup {{ type: {}, tokens: [{}] }}'.format(
 			TokenGroup.Type.reverse_mapping[self.type],
 			', '.join([readable_token(tok) for tok in self._tokens])
 		)
+		
 
+# module functions #############################################################
+def group_tokens(sbuf):
+	"""Groups tokens by line. Splits indents and dedents into their own group.
+	"""
+	io_wrapper = StringIO(sbuf)
+	groups = []
+	group = TokenGroup()
+	for tok in generate_tokens(io_wrapper.readline):
+		if tok[0] == NEWLINE or tok[0] == NL or tok[0] == ENDMARKER or tok[0] == INDENT or tok[0] == DEDENT:
+			group.append(tok)
+			groups.append(group)
+			group = TokenGroup()
+		else:
+			group.append(tok)
+	return groups
+	
 
 def untokenize(tgroups, rmwspace=False, wspace_char = ' ', indent_char='\t'):
 	"""Untokenizes groups of tokens into a string.
@@ -114,23 +141,7 @@ def untokenize(tgroups, rmwspace=False, wspace_char = ' ', indent_char='\t'):
 			''.join([indent_char*indent_lvl, grp.untokenize(rmwspace, wspace_char)])
 		)
 	return '\n'.join(ret)
-
-
-def group_tokens(sbuf):
-	"""Groups tokens by line. Splits indents and dedents into their own group.
-	"""
-	io_wrapper = StringIO(sbuf)
-	groups = []
-	group = TokenGroup()
-	for tok in generate_tokens(io_wrapper.readline):
-		if tok[0] == NEWLINE or tok[0] == NL or tok[0] == ENDMARKER or tok[0] == INDENT or tok[0] == DEDENT:
-			group.append(tok)
-			groups.append(group)
-			group = TokenGroup()
-		else:
-			group.append(tok)
-	return groups
-
+	
 
 def remove_blank_lines(tokens):
 	"""Removes blank lines from the token groups.
@@ -173,23 +184,31 @@ def minimize(sbuf, rm_blank_lines=True, rm_comments=True, rm_docstrings=True, rm
 	return untokenize(grps, rm_whitespace, whitespace_char, indent_char)
 	
 
+# execution ####################################################################
 if __name__ == '__main__':
 	from argparse import ArgumentParser
-	parser = ArgumentParser()
-	parser.add_argument('inpath')
-	parser.add_argument('-o', '--outpath', default=None)
+	parser = ArgumentParser(
+		description='Minimizes Python code using Python\'s lexical scanning tokenize module.''',
+		epilog='By default, the minimizer removes blank lines, comments, docstrings, and extraneous whitespace. Where needed, it will insert a space (\" \") for whitespace between operators and use a tab (\"\\t\") for indentation. Use the command line switches to change any of the defaults.'
+	)
+	parser.add_argument('inpath', help='The file to minimize')
+	parser.add_argument('-o', '--outpath', default=None, 
+		help='When specified, minimizer will output to the path instead of stdout')
 	parser.add_argument('-b', '--keep_blank_lines', default=True,
-		action='store_false')
+		action='store_false', help='When set, minimizer will not remove blank lines.')
 	parser.add_argument('-c', '--keep_comments', default=True,
-		action='store_false')
+		action='store_false', help='When set, minimizer will not remove comment lines and inline comments')
 	parser.add_argument('-d', '--keep_docstrings', default=True,
-		action='store_false')
+		action='store_false', help='When set, minimizer will not remove docstrings')
 	parser.add_argument('-s', '--keep_whitespace', default=True,
-		action='store_false')
-	parser.add_argument('-w', '--whitespace_char', default=' ', type=str)
-	parser.add_argument('-i', '--indent_char', default='\t', type=str)
+		action='store_false', help='When set, minimizer will not remove extraneous whitespace')
+	parser.add_argument('-w', '--whitespace_char', default=' ', type=str,
+		help='Set the whitespace character to use. Defaults to space (\" \")')
+	parser.add_argument('-i', '--indent_char', default='\t', type=str,
+		help='Set the indentation character to use. Defaults to tab (\"\\t\")')
 	args = parser.parse_args()
 	sbuf = ''
+	# TODO: accept folders and recursively minimize python folders
 	with open(args.inpath, 'r') as f:
 		sbuf = f.read()
 	ret = minimize(
@@ -207,3 +226,5 @@ if __name__ == '__main__':
 			f.write(ret)
 	else:
 		print(ret)
+		
+
