@@ -33,6 +33,8 @@ optional arguments:
   -i INDENT_CHAR, --indent_char INDENT_CHAR
                         Set the indentation character to use. Defaults to tab
                         ("\t")
+  -r, --recursive       Treat the in-path and --out-path as directories to
+                        minimize recursively
 
 By default, the minimizer removes blank lines, comments, docstrings, and
 extraneous whitespace. Where needed, it will insert a space (" ") for
