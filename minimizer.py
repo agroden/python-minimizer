@@ -6,9 +6,13 @@
 
 
 from __future__ import print_function
+import logging
 from token import *
 from tokenize import *
 from StringIO import StringIO
+
+
+logger = logging.getLogger(__name__)
 
 
 # classes / helpers ############################################################
@@ -115,6 +119,8 @@ def group_tokens(sbuf):
 	for tok in generate_tokens(io_wrapper.readline):
 		if tok[0] == NEWLINE or tok[0] == NL or tok[0] == ENDMARKER or tok[0] == INDENT or tok[0] == DEDENT:
 			group.append(tok)
+			if verbose > 1:
+				logger.debug('')
 			groups.append(group)
 			group = TokenGroup()
 		else:
@@ -148,8 +154,8 @@ def remove_blank_lines(token_groups):
 	"""
 	base_len = len(token_groups)
 	ret = [grp for grp in token_groups if grp.type != TokenGroup.Type.BLANK_LINE]
-	if g_verbose > 0:
-		print('Removed {} blank lines'.format(base_len - len(ret)))
+	if verbose > 0:
+		logger.info('Removed {} blank lines'.format(base_len - len(ret)))
 	return ret
 	
 
@@ -158,8 +164,8 @@ def remove_docstrings(token_groups):
 	"""
 	base_len = len(token_groups)
 	ret = [grp for grp in token_groups if grp.type != TokenGroup.Type.DOCSTRING]
-	if g_verbose > 0:
-		print('Removed {} docstrings'.format(base_len - len(ret)))
+	if verbose > 0:
+		logger.info('Removed {} docstrings'.format(base_len - len(ret)))
 	return ret
 	
 
@@ -180,8 +186,8 @@ def remove_comments(token_groups):
 		else:
 			tmp.append(grp)
 	ret = [grp for grp in tmp if grp.type != TokenGroup.Type.COMMENT]
-	if g_verbose > 0:
-		print('Removed {} comments and {} inline comments'.format(
+	if verbose > 0:
+		logger.info('Removed {} comments and {} inline comments'.format(
 			base_len - len(ret), inline_comment_ctr))
 	return ret
 	
@@ -205,7 +211,7 @@ if __name__ == '__main__':
 	import os
 	from shutil import copy2
 	import sys
-	global g_verbose
+	global verbose
 	parser = ArgumentParser(
 		description='Minimizes Python code using Python\'s lexical scanning tokenize module.''',
 		epilog='By default, the minimizer removes blank lines, comments, docstrings, and extraneous whitespace. Where needed, it will insert a space (\" \") for whitespace between operators and use a tab (\"\\t\") for indentation. Use the command line switches to change any of the defaults.'
@@ -230,7 +236,11 @@ if __name__ == '__main__':
 	parser.add_argument('-v', '--verbose', default=0, action='count',
 		help='Explain what we are doing as we do it, higher levels are useful for debugging')
 	args = parser.parse_args()
-	g_verbose = args.verbose
+	verbose = args.verbose
+	logging.basicConfig(format='%(levelname)s: %(message)s')
+	logger.setLevel(logging.INFO)
+	if verbose > 1:
+		logger.setLevel(logging.DEBUG)
 	def minimize_file(path, args):
 		sbuf = ''
 		with open(path, 'r') as f:
@@ -287,6 +297,6 @@ if __name__ == '__main__':
 			with open(args.out_path, 'w') as f:
 				f.write(mini)
 		else:
-			print(ret)
+			print(mini)
 			
 
