@@ -143,32 +143,47 @@ def untokenize(tgroups, rmwspace=False, wspace_char = ' ', indent_char='\t'):
 	return '\n'.join(ret)
 	
 
-def remove_blank_lines(tokens):
+def remove_blank_lines(token_groups):
 	"""Removes blank lines from the token groups.
 	"""
-	return [grp for grp in tokens if grp.type != TokenGroup.Type.BLANK_LINE]
+	base_len = len(token_groups)
+	ret = [grp for grp in token_groups if grp.type != TokenGroup.Type.BLANK_LINE]
+	if g_verbose > 0:
+		print('Removed {} blank lines'.format(base_len - len(ret)))
+	return ret
 	
 
-def remove_docstrings(tokens):
+def remove_docstrings(token_groups):
 	"""Removes docstrings from the token groups.
 	"""
-	return [grp for grp in tokens if grp.type != TokenGroup.Type.DOCSTRING]
+	base_len = len(token_groups)
+	ret = [grp for grp in token_groups if grp.type != TokenGroup.Type.DOCSTRING]
+	if g_verbose > 0:
+		print('Removed {} docstrings'.format(base_len - len(ret)))
+	return ret
 	
 
-def remove_comments(tokens):
+def remove_comments(token_groups):
 	"""Removes comment lines and inline comments from the token groups.
 	"""
-	ret = []
-	for grp in tokens:
+	base_len = len(token_groups)
+	inline_comment_ctr = 0
+	tmp = []
+	for grp in token_groups:
 		if grp.type == TokenGroup.Type.CODE_INLINE_COMMENT:
 			group = TokenGroup()
 			for tok in grp._tokens:
 				if tok[0] != COMMENT:
 					group.append(tok)
-			ret.append(group)
+					inline_comment_ctr += 1
+			tmp.append(group)
 		else:
-			ret.append(grp)
-	return [grp for grp in ret if grp.type != TokenGroup.Type.COMMENT]
+			tmp.append(grp)
+	ret = [grp for grp in tmp if grp.type != TokenGroup.Type.COMMENT]
+	if g_verbose > 0:
+		print('Removed {} comments and {} inline comments'.format(
+			base_len - len(ret), inline_comment_ctr))
+	return ret
 	
 
 def minimize(sbuf, rm_blank_lines=True, rm_comments=True, rm_docstrings=True, rm_whitespace=True, whitespace_char=' ', indent_char='\t'):
@@ -190,6 +205,7 @@ if __name__ == '__main__':
 	import os
 	from shutil import copy2
 	import sys
+	global g_verbose
 	parser = ArgumentParser(
 		description='Minimizes Python code using Python\'s lexical scanning tokenize module.''',
 		epilog='By default, the minimizer removes blank lines, comments, docstrings, and extraneous whitespace. Where needed, it will insert a space (\" \") for whitespace between operators and use a tab (\"\\t\") for indentation. Use the command line switches to change any of the defaults.'
@@ -211,8 +227,10 @@ if __name__ == '__main__':
 		help='Set the indentation character to use. Defaults to tab (\"\\t\")')
 	parser.add_argument('-r', '--recursive', default=False, action='store_true',
 		help='Treat the in-path and --out-path as directories to minimize recursively')
+	parser.add_argument('-v', '--verbose', default=0, action='count',
+		help='Explain what we are doing as we do it, higher levels are useful for debugging')
 	args = parser.parse_args()
-	# TODO: accept folders and recursively minimize python folders
+	g_verbose = args.verbose
 	def minimize_file(path, args):
 		sbuf = ''
 		with open(path, 'r') as f:
@@ -251,8 +269,9 @@ if __name__ == '__main__':
 					else:
 						copy2(src_path, dst_path)
 				elif fname.lower().endswith('.py'):
+					print('{}:'.format(src_path))
 					mini = minimize_file(src_path, args)
-					print('{}:\n{}\n'.format(src_path, mini))
+					print('{}\n'.format(mini))
 	else: # in_path is a single file
 		if not os.path.exists(args.in_path):
 			print('ERROR: Given in path does not exist')
