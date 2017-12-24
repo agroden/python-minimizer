@@ -36,6 +36,7 @@ class TokenGroup(object):
 	Type = enum('UNKNOWN', 'CODE', 'CODE_INLINE_COMMENT', 'COMMENT', 'DOCSTRING',
 		'BLANK_LINE', 'SHEBANG', 'INDENT', 'DEDENT', 'EOF')
 	
+	_WORD_OPS = ('and', 'or', 'not', 'is', 'in', 'for', 'while', 'return')
 	def __init__(self):
 		self._tokens = []
 		self._finalized = False
@@ -48,18 +49,17 @@ class TokenGroup(object):
 		prev = None
 		for tok in self._tokens:
 			if tok[0] != NEWLINE and tok[0] != NL:
-				# tok[2][1]: start column, prev[3][1]: end column
-				# the difference between the two indicates whitespace
-				if prev and tok[2][1] > prev[3][1]:
-					# TODO: sometimes two OP types are next to each other and this leads
-					# to odd looking (yet totally valid) output; consider fixing this
-					# example: "... tok[0] == NAME) or not rmwspace:"
-					# becomes: "tok[0]==NAME)or not rmwspace:"
-					if (prev and prev[0] == NAME and tok[0] == NAME) or not rmwspace:
-						ret = ''.join([ret, wspace_char])
-					# TODO: consider adding this for reals
-					#elif preserve_wspace:
-					#	ret = ''.join([ret, wspace_char * (tok[2][1] - prev[3][1])])
+				if prev:
+					if rmwspace:
+						if (prev[0] == NAME and tok[0] == NAME) or \
+							 (prev[0] == OP and tok[1] in self._WORD_OPS) or \
+							 (tok[0] in (OP, STRING) and prev[1] in self._WORD_OPS):
+							ret = ''.join([ret, wspace_char])
+					else:
+						# tok[2][1]: start column, prev[3][1]: end column
+						# the difference between the two indicates whitespace
+						if prev and tok[2][1] > prev[3][1]:
+							ret = ''.join([ret, wspace_char * (tok[2][1] - prev[3][1])])
 				ret = ''.join([ret, tok[1].rstrip()])
 			prev = tok
 		return ret
