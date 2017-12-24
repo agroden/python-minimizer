@@ -98,7 +98,7 @@ class TokenGroup(object):
 	def __str__(self):
 		"""Prints TokenGroup information for easier debugging.
 		"""
-		def readable_token(self, tok):
+		def readable_token(tok):
 			return '({}, {}, {}, {}, {})'.format(
 				tok_name[tok[0]], repr(tok[1]), tok[2], tok[3], repr(tok[4])
 			)
@@ -116,12 +116,18 @@ def group_tokens(sbuf):
 	io_wrapper = StringIO(sbuf)
 	groups = []
 	group = TokenGroup()
+	bracket_ctr = 0
 	for tok in generate_tokens(io_wrapper.readline):
-		if tok[0] == NEWLINE or tok[0] == NL or tok[0] == ENDMARKER or tok[0] == INDENT or tok[0] == DEDENT:
+		if tok[0] == OP and tok[1] in ('(', '[', '{'):
+			bracket_ctr += 1
+		elif tok[0] == OP and tok[1] in (')', ']', '}'):
+			bracket_ctr -= 1
+		# if we have a bracket that isn't closed, keep the group open
+		if tok[0] in (NEWLINE, NL, ENDMARKER, INDENT, DEDENT) and bracket_ctr == 0:
 			group.append(tok)
-			if verbose > 1:
-				logger.debug('')
 			groups.append(group)
+			if verbose > 1:
+				logger.debug('Closed token group: {}'.format(group))
 			group = TokenGroup()
 		else:
 			group.append(tok)
