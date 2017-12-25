@@ -261,6 +261,12 @@ if __name__ == '__main__':
 		if not os.path.isdir(args.in_path):
 			print('ERROR: Given in path is not a directory')
 			sys.exit(-1)
+		args.in_path = os.path.normpath(args.in_path + os.sep)
+		if args.out_path:
+			if os.path.exists(args.out_path) and not os.path.isdir(args.out_path):
+				print('ERROR: Given out path is not a directory')
+				sys.exit(-1)
+			args.out_path = os.path.normpath(args.out_path + os.sep)
 		for root, dirs, fnames in os.walk(args.in_path):
 			for fname in fnames:
 				src_path = os.path.join(root, fname)
