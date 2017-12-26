@@ -36,6 +36,7 @@ class TokenGroup(object):
 	Type = enum('UNKNOWN', 'CODE', 'CODE_INLINE_COMMENT', 'COMMENT', 'DOCSTRING',
 		'BLANK_LINE', 'SHEBANG', 'INDENT', 'DEDENT', 'EOF')
 	
+	_WORD_OPS = ('and', 'or', 'not', 'is', 'in', 'for', 'while', 'return')
 	def __init__(self):
 		self._tokens = []
 		self._finalized = False
@@ -48,18 +49,17 @@ class TokenGroup(object):
 		prev = None
 		for tok in self._tokens:
 			if tok[0] != NEWLINE and tok[0] != NL:
-				# tok[2][1]: start column, prev[3][1]: end column
-				# the difference between the two indicates whitespace
-				if prev and tok[2][1] > prev[3][1]:
-					# TODO: sometimes two OP types are next to each other and this leads
-					# to odd looking (yet totally valid) output; consider fixing this
-					# example: "... tok[0] == NAME) or not rmwspace:"
-					# becomes: "tok[0]==NAME)or not rmwspace:"
-					if (prev and prev[0] == NAME and tok[0] == NAME) or not rmwspace:
-						ret = ''.join([ret, wspace_char])
-					# TODO: consider adding this for reals
-					#elif preserve_wspace:
-					#	ret = ''.join([ret, wspace_char * (tok[2][1] - prev[3][1])])
+				if prev:
+					if rmwspace:
+						if (prev[0] == NAME and tok[0] == NAME) or \
+							 (prev[0] == OP and tok[1] in self._WORD_OPS) or \
+							 (tok[0] in (OP, STRING) and prev[1] in self._WORD_OPS):
+							ret = ''.join([ret, wspace_char])
+					else:
+						# tok[2][1]: start column, prev[3][1]: end column
+						# the difference between the two indicates whitespace
+						if prev and tok[2][1] > prev[3][1]:
+							ret = ''.join([ret, wspace_char * (tok[2][1] - prev[3][1])])
 				ret = ''.join([ret, tok[1].rstrip()])
 			prev = tok
 		return ret
@@ -98,7 +98,7 @@ class TokenGroup(object):
 	def __str__(self):
 		"""Prints TokenGroup information for easier debugging.
 		"""
-		def readable_token(self, tok):
+		def readable_token(tok):
 			return '({}, {}, {}, {}, {})'.format(
 				tok_name[tok[0]], repr(tok[1]), tok[2], tok[3], repr(tok[4])
 			)
@@ -116,12 +116,18 @@ def group_tokens(sbuf):
 	io_wrapper = StringIO(sbuf)
 	groups = []
 	group = TokenGroup()
+	bracket_ctr = 0
 	for tok in generate_tokens(io_wrapper.readline):
-		if tok[0] == NEWLINE or tok[0] == NL or tok[0] == ENDMARKER or tok[0] == INDENT or tok[0] == DEDENT:
+		if tok[0] == OP and tok[1] in ('(', '[', '{'):
+			bracket_ctr += 1
+		elif tok[0] == OP and tok[1] in (')', ']', '}'):
+			bracket_ctr -= 1
+		# if we have a bracket that isn't closed, keep the group open
+		if tok[0] in (NEWLINE, NL, ENDMARKER, INDENT, DEDENT) and bracket_ctr == 0:
 			group.append(tok)
-			if verbose > 1:
-				logger.debug('')
 			groups.append(group)
+			if verbose > 1:
+				logger.debug('Closed token group: {}'.format(group))
 			group = TokenGroup()
 		else:
 			group.append(tok)
