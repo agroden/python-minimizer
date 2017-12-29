@@ -212,7 +212,7 @@ def minimize(sbuf, rm_blank_lines=True, rm_comments=True, rm_docstrings=True, rm
 	
 
 # execution ####################################################################
-if __name__ == '__main__':
+def main():
 	from argparse import ArgumentParser
 	import os
 	from shutil import copy2
@@ -293,6 +293,7 @@ if __name__ == '__main__':
 				elif fname.lower().endswith('.py'):
 					print('{}:'.format(src_path))
 					mini = minimize_file(src_path, args)
+
 					print('{}\n'.format(mini))
 	else: # in_path is a single file
 		if not os.path.exists(args.in_path):
@@ -311,4 +312,8 @@ if __name__ == '__main__':
 		else:
 			print(mini)
 			
+
+if __name__ == '__main__':
+	main()
+	
 
