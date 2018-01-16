@@ -13,7 +13,7 @@ with open(os.path.join(base, 'README.md'), 'r') as f:
 
 setup(
   name = 'python-minimizer',
-  version = '1.0.0',
+  version = '1.0.2',
   description = "Minimizes Python code using Python's lexical scanning tokenize module.",
   long_description=desc,
   url = 'https://github.com/agroden/python-minimizer',
