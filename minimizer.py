@@ -61,7 +61,7 @@ class TokenGroup(object):
 						if prev and tok[2][1] > prev[3][1]:
 							ret = ''.join([ret, wspace_char * (tok[2][1] - prev[3][1])])
 				ret = ''.join([ret, tok[1].rstrip()])
-			prev = tok
+				prev = tok
 		return ret
 		
 	def append(self, tok):
