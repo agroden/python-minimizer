@@ -51,7 +51,7 @@ class TokenGroup(object):
 			if tok[0] != NEWLINE and tok[0] != NL:
 				if prev:
 					if rmwspace:
-						if (prev[0] == NAME and tok[0] == NAME) or \
+						if (prev[0] in (NAME, NUMBER) and tok[0] in (NAME, NUMBER)) or \
 							 (prev[0] == OP and tok[1] in self._WORD_OPS) or \
 							 (tok[0] in (OP, STRING) and prev[1] in self._WORD_OPS):
 							ret = ''.join([ret, wspace_char])
