@@ -1,5 +1,11 @@
 # python-minimizer
 Minimizes Python code using Python's lexical scanning tokenize module.
+
+## Get it on pip
+```sh
+ pip install python-minimizer 
+ ```
+
 ## Command-line usage
 Currently python-minimizer supports the following options:
 ```sh
