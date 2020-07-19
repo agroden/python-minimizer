@@ -5,51 +5,61 @@
 """
 
 
-from __future__ import print_function
 import logging
-from token import *
-from tokenize import *
-from StringIO import StringIO
+from token import (
+	COMMENT,
+	DEDENT,
+	ENDMARKER,
+	INDENT,
+	NEWLINE,
+	NL,
+	NAME,
+	NUMBER,
+	OP,
+	STRING,
+	tok_name
+)
+from tokenize import generate_tokens
+from io import StringIO
+from enum import Enum, auto
 
 
 logger = logging.getLogger(__name__)
 
 
 # classes / helpers ############################################################
-def enum(*sequential, **named):
-	"""Makes an enum type with a reverse mapping for lookup of the enum string.
-	Included for portability sake.
-	Taken from: https://stackoverflow.com/a/1695250
-	"""
-	enums = dict(zip(sequential, range(len(sequential))), **named)
-	reverse = dict((value, key) for key, value in enums.iteritems())
-	enums['reverse_mapping'] = reverse
-	return type('Enum', (), enums)
-	
-
 class TokenGroup(object):
 	"""A class for keeping track of a group of tokens.
 	Token groups are meant to be a collection of tokens that are lexagraphically 
 	adjacent on a line. This helps to easily remove comments, docstrings, and 
 	blank lines.
 	"""
-	Type = enum('UNKNOWN', 'CODE', 'CODE_INLINE_COMMENT', 'COMMENT', 'DOCSTRING',
-		'BLANK_LINE', 'SHEBANG', 'INDENT', 'DEDENT', 'EOF')
+	class Type(Enum):
+		UNKNOWN = auto()
+		CODE = auto()
+		CODE_INLINE_COMMENT = auto()
+		COMMENT = auto()
+		DOCSTRING = auto()
+		BLANK_LINE = auto()
+		SHEBANG = auto()
+		INDENT = auto()
+		DEDENT = auto()
+		EOF = auto()
 	
 	_WORD_OPS = ('and', 'or', 'not', 'is', 'in', 'for', 'while', 'return')
 	def __init__(self):
 		self._tokens = []
 		self._finalized = False
 		self.type = TokenGroup.Type.UNKNOWN
-		
+
 	def untokenize(self, rmwspace=False, wspace_char=' '):
 		"""Untokenize this group.
 		"""
 		ret = ''
-		prev = None
+		prev = []
 		for tok in self._tokens:
 			if tok[0] != NEWLINE and tok[0] != NL:
-				if prev:
+				if len(prev) != 0:
 					if rmwspace:
 						if (prev[0] in (NAME, NUMBER) and tok[0] in (NAME, NUMBER)) or \
 							 (prev[0] == OP and tok[1] in self._WORD_OPS) or \
@@ -104,7 +114,7 @@ class TokenGroup(object):
 			)
 		# function body #
 		return 'TokenGroup {{ type: {}, tokens: [{}] }}'.format(
-			TokenGroup.Type.reverse_mapping[self.type],
+			self.type.name,
 			', '.join([readable_token(tok) for tok in self._tokens])
 		)
 		
@@ -150,7 +160,7 @@ def untokenize(tgroups, rmwspace=False, wspace_char = ' ', indent_char='\t'):
 		elif grp.type == TokenGroup.Type.EOF:
 			continue
 		ret.append(
-			''.join([indent_char*indent_lvl, grp.untokenize(rmwspace, wspace_char)])
+			''.join([indent_char * indent_lvl, grp.untokenize(rmwspace, wspace_char)])
 		)
 	return '\n'.join(ret)
 	
@@ -273,7 +283,7 @@ def main():
 				print('ERROR: Given out path is not a directory')
 				sys.exit(-1)
 			args.out_path = os.path.normpath(args.out_path + os.sep)
-		for root, dirs, fnames in os.walk(args.in_path):
+		for root, _, fnames in os.walk(args.in_path):
 			for fname in fnames:
 				src_path = os.path.join(root, fname)
 				if args.out_path:
