@@ -48,6 +48,7 @@ extraneous whitespace. Where needed, it will insert a space (" ") for
 whitespace between operators and use a tab ("\t") for indentation. Use the
 command line switches to change any of the defaults.
 ```
+
 ## Library usage
 Of course, you can also import the minimizer module and use it as follows:
 ```python
