@@ -16,6 +16,7 @@ setup(
   version = '2.0.0',
   description = "Minimizes Python code using Python's lexical scanning tokenize module.",
   long_description=desc,
+  long_description_content_type="text/markdown",
   url = 'https://github.com/agroden/python-minimizer',
   author = 'Alexander Groden',
   author_email = 'alexander.groden@gmail.com',
