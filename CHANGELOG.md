@@ -7,10 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- New obfuscation module 
+- Type hints for all functions
+
 ### Changed
+- Logging uses a root logger now, no more checking verbosity
+- Moved functional code to it's own module, now relies on main.py for driving
+
 ### Deprecated
+
 ### Removed
+
 ### Fixed
+
 ### Security
 
 
