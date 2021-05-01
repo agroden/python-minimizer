@@ -13,7 +13,7 @@ with open(os.path.join(base, 'README.md'), 'r') as f:
 
 setup(
   name = 'python-minimizer',
-  version = '2.0.0',
+  version = '2.0.1',
   description = "Minimizes Python code using Python's lexical scanning tokenize module.",
   long_description=desc,
   long_description_content_type="text/markdown",
