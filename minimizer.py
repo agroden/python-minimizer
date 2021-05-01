@@ -25,6 +25,7 @@ from enum import Enum, auto
 
 
 logger = logging.getLogger(__name__)
+verbose = False
 
 
 # classes / helpers ############################################################
