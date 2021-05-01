@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+## [2.0.1] - 2021-05-01
+### Fixed
+- Added default value for verbose flag if not defined by main
+
+### Removed
+- Removed unsupported Python 3 versions not personally tested by me
+
 
 ## [2.0.0] - 2020-07-19
 ### Changed
