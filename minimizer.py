@@ -62,9 +62,11 @@ class TokenGroup(object):
 			if tok[0] != NEWLINE and tok[0] != NL:
 				if len(prev) != 0:
 					if rmwspace:
+						is_prefixed_string = tok[0] == STRING and not tok[1].startswith(('\'', '"'))
 						if (prev[0] in (NAME, NUMBER) and tok[0] in (NAME, NUMBER)) or \
 							 (prev[0] == OP and tok[1] in self._WORD_OPS) or \
-							 (tok[0] in (OP, STRING) and prev[1] in self._WORD_OPS):
+							 (tok[0] in (OP, STRING) and prev[1] in self._WORD_OPS) or \
+							 (prev[0] == NAME and is_prefixed_string):
 							ret = ''.join([ret, wspace_char])
 					else:
 						# tok[2][1]: start column, prev[3][1]: end column
